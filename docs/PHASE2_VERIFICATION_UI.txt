@@ -1,0 +1,29 @@
+✔ sendEvent: 400 cannot show success (4.216391ms)
+✔ loadProducts: 400 cannot show success (0.686062ms)
+✔ getRecommendations: 400 cannot show success (0.727284ms)
+✔ loadEvents: 400 cannot show success (0.59747ms)
+✔ sendEvent: 404 cannot show success (0.608997ms)
+✔ loadProducts: 404 cannot show success (0.584881ms)
+✔ getRecommendations: 404 cannot show success (0.491562ms)
+✔ loadEvents: 404 cannot show success (0.806341ms)
+✔ sendEvent: 500 cannot show success (1.937866ms)
+✔ loadProducts: 500 cannot show success (0.684669ms)
+✔ getRecommendations: 500 cannot show success (0.574686ms)
+✔ loadEvents: 500 cannot show success (0.570199ms)
+✔ sendEvent: network cannot show success (1.051636ms)
+✔ loadProducts: network cannot show success (0.591651ms)
+✔ getRecommendations: network cannot show success (0.44324ms)
+✔ loadEvents: network cannot show success (0.515478ms)
+✔ retry preserves ID after 400 (1.387036ms)
+✔ retry preserves ID after 404 (0.613494ms)
+✔ retry preserves ID after 500 (0.638421ms)
+✔ retry preserves ID after network (0.703277ms)
+✔ catalog recommendations and history render (18.112019ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126.047185

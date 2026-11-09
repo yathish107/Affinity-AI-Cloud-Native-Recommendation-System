@@ -1,0 +1,36 @@
+{
+  "changed_existing_files": [
+    "README.md",
+    "docs/FINAL_IMPLEMENTATION_REPORT.md",
+    "frontend/index.html",
+    "frontend/style.css",
+    "frontend/app.js",
+    "frontend/browser-tests/test_ui.py"
+  ],
+  "added_files": [
+    "docs/FRONTEND_UPGRADE_REPORT.md",
+    "docs/frontend-upgrade/BACKEND_TEST_RESULTS.txt",
+    "docs/frontend-upgrade/VALIDATION_ENVIRONMENT.txt",
+    "docs/frontend-upgrade/FRONTEND_TEST_RESULTS.txt",
+    "docs/frontend-upgrade/BROWSER_ATTEMPT.txt",
+    "frontend/tools/bundle_images.py",
+    "frontend/browser-tests/test_frontend_contract.py",
+    "frontend/tests/ui.cjs",
+    "frontend/assets/products/p7.jpg",
+    "frontend/assets/products/manifest.json",
+    "frontend/assets/products/p2.jpg",
+    "frontend/assets/products/p3.jpg",
+    "frontend/assets/products/p11.jpg",
+    "frontend/assets/products/p1.jpg",
+    "frontend/assets/products/p6.jpg",
+    "frontend/assets/products/p10.jpg",
+    "frontend/assets/products/p8.jpg",
+    "frontend/assets/products/p12.jpg",
+    "frontend/assets/products/p5.jpg",
+    "frontend/assets/products/SOURCES.md",
+    "frontend/assets/products/p9.jpg",
+    "frontend/assets/products/p4.jpg"
+  ],
+  "protected_files_unchanged": 44,
+  "original_zip_sha256": "d7f15661beb65024c29a4bac4409cab40fe13df30c0deadbae9407be16024ea8"
+}

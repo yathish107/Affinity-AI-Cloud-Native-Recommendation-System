@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#163d32"><meta name="description" content="Thoughtful discoveries, with recommendations you can understand.">
+  <title>Affinity · Discover your next favourite</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<aside class="sidebar">
+  <a class="brand" href="#discover" aria-label="Affinity home"><span class="brand-mark" aria-hidden="true">a.</span> affinity<span class="brand-version">v2</span></a>
+  <p class="nav-label">YOUR WORKSPACE</p>
+  <nav aria-label="Main navigation">
+    <button data-tab="discover" class="active" aria-current="page"><span data-icon="discover"></span>Discover</button>
+    <button data-tab="history"><span data-icon="history"></span>Your Activity</button>
+    <button data-tab="analytics"><span data-icon="analytics"></span>Admin Analytics</button>
+    <button data-tab="system"><span data-icon="system"></span>System Health</button>
+  </nav>
+  <div class="aside-note"><span data-icon="spark"></span><strong>A little more you.</strong><p>Thoughtful finds.<br>Recommendations with reasons.</p><span class="demo-tag">DEMO WORKSPACE</span></div>
+</aside>
+<main id="main" tabindex="-1">
+  <header class="topbar"><span id="breadcrumb">Workspace <span aria-hidden="true">/</span> Discover</span><div class="profile"><span class="avatar" aria-hidden="true">S</span><form id="profileForm"><label for="user">Demo profile</label><div class="profile-input"><input id="user" maxlength="100" required aria-label="Demo profile"><button id="switch" type="submit" class="text-button">Switch <span aria-hidden="true">↗</span></button></div></form></div></header>
+  <div id="message" role="status" aria-live="polite"></div>
+  <section id="discover" aria-labelledby="discoverTitle">
+    <div class="page-heading"><div><p class="eyebrow">MADE FOR YOUR EVERYDAY</p><h1 id="discoverTitle">Find what fits you.</h1><p>Good things, thoughtfully discovered. Welcome to your collection.</p></div><span class="pill">Explainable by design</span></div>
+    <div class="hero"><div class="hero-copy"><span class="eyebrow">LESS SEARCHING. MORE DISCOVERING.</span><h2>Your next favourite.<br><em>With a reason why.</em></h2><p>From workday essentials to weekend plans, explore finds that evolve with your interests.</p><a class="button light" href="#collection">Explore the collection <span aria-hidden="true">↗</span></a><span class="hero-footnote">Your interactions shape your recommendations.</span></div><div class="hero-visual" id="heroVisual"><span class="hero-caption">THE EVERYDAY EDIT <span aria-hidden="true">↗</span></span></div></div>
+    <div class="section-head"><div><p class="eyebrow">PERSONAL DISCOVERIES</p><h2>Recommended for you</h2><p>Your next picks, with the reasoning included.</p></div><button id="refresh" class="secondary"><span data-icon="refresh"></span>Refresh recommendations</button></div>
+    <div id="recs" class="grid" aria-live="polite"></div>
+    <div id="collection" class="section-head"><div><p class="eyebrow">THE AFFINITY COLLECTION</p><h2>Good finds for every day</h2></div><span id="productCount" class="muted"></span></div>
+    <div class="catalog-toolbar"><div id="categories" class="chips" role="group" aria-label="Filter by category"></div><label class="search-wrap"><span data-icon="search"></span><input id="search" type="search" placeholder="Search the collection…" aria-label="Search products"></label></div>
+    <div id="products" class="grid" aria-live="polite"></div>
+    <div class="section-head"><div><p class="eyebrow">DISCOVER TOGETHER</p><h2>Trending now</h2><p>Popularity-ranked picks from the recommendation service.</p></div><button id="trendingRefresh" class="text-button">Refresh <span aria-hidden="true">↗</span></button></div><div id="trending" class="grid"></div>
+    <p class="fineprint">Product photographs illustrate this demo catalogue. View, Click and Purchase record interactions; no payment is taken.</p>
+  </section>
+  <section id="history" hidden aria-labelledby="historyTitle">
+    <div class="page-heading"><div><p class="eyebrow">YOUR DISCOVERY JOURNEY</p><h1 id="historyTitle">Your Activity</h1><p>A little history of what caught your eye.</p></div><button id="historyRefresh" class="secondary"><span data-icon="refresh"></span>Refresh activity</button></div>
+    <div class="panel"><div class="panel-heading"><h2>Interaction timeline</h2><label class="inline-label">Show <select id="activityType" aria-label="Interaction type"><option value="">All interactions</option><option value="view">Views</option><option value="click">Clicks</option><option value="purchase">Purchases</option></select></label></div><p class="fineprint">Filters apply to the current page of activity. Timestamps use your local time.</p><div id="historyRows" aria-live="polite"></div><div class="pagination"><span id="historyCount" class="muted"></span><div><button id="historyPrev" class="secondary" disabled>Previous</button><button id="historyNext" class="secondary" disabled>Next</button></div></div></div>
+  </section>
+  <section id="analytics" hidden aria-labelledby="analyticsTitle">
+    <div class="page-heading"><div><p class="eyebrow">WORKSPACE INSIGHTS</p><h1 id="analyticsTitle">Admin Analytics</h1><p>A clear view of activity and event processing.</p></div><span class="pill">Admin access</span></div>
+    <form id="adminForm" class="panel access-panel"><div><label for="adminKey">Admin key</label><p class="muted">Use the key configured for this environment.</p></div><input id="adminKey" type="password" placeholder="Enter your admin key" autocomplete="off" required><button id="adminLoad" type="submit">Load analytics <span aria-hidden="true">↗</span></button></form>
+    <p id="analyticsUpdated" class="fineprint"></p><div id="stats" class="kpi-grid" aria-live="polite"></div><div id="charts" class="chart-grid"></div>
+  </section>
+  <section id="system" hidden aria-labelledby="systemTitle">
+    <div class="page-heading"><div><p class="eyebrow">PLATFORM STATUS</p><h1 id="systemTitle">System Health</h1><p>Dependency checks reported by the platform API.</p></div><button id="systemRefresh" class="secondary"><span data-icon="refresh"></span>Check services</button></div><p id="healthUpdated" class="fineprint">No checks performed yet.</p><div id="health" class="health-grid" aria-live="polite"></div><div class="panel health-note"><span data-icon="info"></span><div><h3>One snapshot, four services</h3><p>Refresh to request a new check. Redis outages can use database-backed recommendation computation. Status here does not verify the event workers or broker.</p></div></div>
+  </section>
+  <footer><a href="#discover" class="footer-brand">affinity</a><span>Intelligent discovery. Clearly explained.</span><span>Demo identities · No checkout</span></footer>
+</main>
+<script src="app.js"></script>
+</body></html>

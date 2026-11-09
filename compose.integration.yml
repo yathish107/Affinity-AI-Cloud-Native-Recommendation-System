@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: recommend_integration
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U test -d recommend_integration]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    entrypoint: [sh, -c]
+    command: ['while true; do redis-server --save "" --appendonly no; sleep 3; done']
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  broker:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.9
+    command: [redpanda, start, --overprovisioned, --smp=1, --memory=512M, --reserve-memory=0M, --check=false, --kafka-addr=0.0.0.0:9092, --advertise-kafka-addr=broker:9092]
+    healthcheck:
+      test: [CMD, rpk, cluster, info, -X, brokers=broker:9092]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  topics:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.9
+    entrypoint: [sh, -c]
+    command: ['rpk topic create user-events -p 1 -r 1 -X brokers=broker:9092 || rpk topic describe user-events -X brokers=broker:9092']
+    depends_on:
+      broker: {condition: service_healthy}
+  tests:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.integration
+    environment:
+      DATABASE_URL: postgresql+psycopg://test:test@postgres:5432/recommend_integration
+      TEST_DATABASE_URL: postgresql+psycopg://test:test@postgres:5432/recommend_integration
+      INTEGRATION_TEST_MODE: isolated
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      topics: {condition: service_completed_successfully}

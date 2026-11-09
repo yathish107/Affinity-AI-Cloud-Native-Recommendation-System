@@ -1,0 +1,549 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-recommender
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: ai-recommender
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        env:
+        - name: POSTGRES_DB
+          value: recommend
+        - name: POSTGRES_USER
+          value: recommend
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: platform-secrets
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        ports:
+        - containerPort: 5432
+        readinessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: ai-recommender
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        env: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        command:
+        - redis-server
+        - --maxmemory
+        - 64mb
+        - --maxmemory-policy
+        - allkeys-lru
+        ports:
+        - containerPort: 6379
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: ai-recommender
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: broker-data
+  namespace: ai-recommender
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broker
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: broker
+  template:
+    metadata:
+      labels:
+        app: broker
+    spec:
+      containers:
+      - name: broker
+        image: docker.redpanda.com/redpandadata/redpanda:v24.3.9
+        env: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        command:
+        - redpanda
+        - start
+        - --overprovisioned
+        - --smp=1
+        - --memory=1G
+        - --reserve-memory=0M
+        - --node-id=0
+        - --check=false
+        - --kafka-addr=0.0.0.0:9092
+        - --advertise-kafka-addr=broker:9092
+        ports:
+        - containerPort: 9092
+        readinessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/redpanda/data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: broker-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: broker
+  namespace: ai-recommender
+spec:
+  selector:
+    app: broker
+  ports:
+  - port: 9092
+    targetPort: 9092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: recommendation
+  template:
+    metadata:
+      labels:
+        app: recommendation
+    spec:
+      containers:
+      - name: recommendation
+        image: ai-recommender-backend:v2
+        env:
+        - name: APP_ROLE
+          value: recommendation
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        envFrom:
+        - secretRef:
+            name: platform-secrets
+        - configMapRef:
+            name: platform-config
+        command:
+        - uvicorn
+        - app.service:app
+        - --host
+        - 0.0.0.0
+        - --port
+        - '8000'
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 8000
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation
+  namespace: ai-recommender
+spec:
+  selector:
+    app: recommendation
+  ports:
+  - port: 8000
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommender
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: recommender
+  template:
+    metadata:
+      labels:
+        app: recommender
+    spec:
+      containers:
+      - name: recommender
+        image: ai-recommender-backend:v2
+        env:
+        - name: APP_ROLE
+          value: api
+        - name: RECOMMENDATION_URL
+          value: http://recommendation:8000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        envFrom:
+        - secretRef:
+            name: platform-secrets
+        - configMapRef:
+            name: platform-config
+        command:
+        - uvicorn
+        - app.service:app
+        - --host
+        - 0.0.0.0
+        - --port
+        - '8000'
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 8000
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommender
+  namespace: ai-recommender
+spec:
+  selector:
+    app: recommender
+  ports:
+  - port: 8000
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: relay
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: relay
+  template:
+    metadata:
+      labels:
+        app: relay
+    spec:
+      containers:
+      - name: relay
+        image: ai-recommender-backend:v2
+        env: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        envFrom:
+        - secretRef:
+            name: platform-secrets
+        - configMapRef:
+            name: platform-config
+        command:
+        - python
+        - -m
+        - app.worker
+        - relay
+        ports:
+        - containerPort: 9101
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: consumer
+  template:
+    metadata:
+      labels:
+        app: consumer
+    spec:
+      containers:
+      - name: consumer
+        image: ai-recommender-backend:v2
+        env: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        envFrom:
+        - secretRef:
+            name: platform-secrets
+        - configMapRef:
+            name: platform-config
+        command:
+        - python
+        - -m
+        - app.worker
+        - consumer
+        ports:
+        - containerPort: 9101
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: ai-recommender-frontend:v2
+        env: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: ai-recommender
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: ai-recommender
+data:
+  REDIS_URL: redis://redis:6379/0
+  KAFKA_BOOTSTRAP: broker:9092
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: recommendation
+  namespace: ai-recommender
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: recommendation
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: relay
+  namespace: ai-recommender
+spec:
+  selector:
+    app: relay
+  ports:
+  - port: 9101
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: consumer
+  namespace: ai-recommender
+spec:
+  selector:
+    app: consumer
+  ports:
+  - port: 9101

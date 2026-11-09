@@ -1,0 +1,15 @@
+exporters:
+  debug:
+    verbosity: basic
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+service:
+  pipelines:
+    traces:
+      exporters:
+      - debug
+      receivers:
+      - otlp

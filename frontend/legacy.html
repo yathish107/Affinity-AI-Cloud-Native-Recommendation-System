@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI Recommendation System</title>
+<style>body{font-family:Arial;margin:0;background:#f4f6f8;color:#17202a}.wrap{max-width:1100px;margin:auto;padding:25px}.hero{background:#17202a;color:white;padding:25px;border-radius:14px}.controls{margin:20px 0;display:flex;gap:10px;flex-wrap:wrap}input,button{padding:11px;border-radius:8px;border:1px solid #bbb}button{cursor:pointer;background:#17202a;color:white}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:15px}.card{background:white;padding:18px;border-radius:12px;box-shadow:0 2px 8px #0001}.price{font-weight:bold;font-size:20px}.rec{border-left:5px solid #17202a}.msg{margin:12px 0;padding:10px;border-radius:8px;background:white}</style></head>
+<body><div class="wrap"><div class="hero"><h1>AI-Powered Real-Time Recommendation System</h1><p>Event-driven + ML personalization + cloud-native microservices</p></div>
+<div class="controls"><input id="user" value="student1" placeholder="User ID"><button onclick="loadProducts()">Load Products</button><button onclick="getRecommendations()">Get Recommendations</button><button onclick="loadEvents()">View User Events</button></div><div id="msg" class="msg">Ready.</div><h2>Products</h2><div id="products" class="grid"></div><h2>Personalized Recommendations</h2><div id="recs" class="grid"></div><h2>Recent Events</h2><pre id="events" class="msg"></pre></div>
+<script>
+const api='/api'; let products=[];
+async function checkedFetch(url, options){
+ document.getElementById('msg').textContent='Loading…';
+ let response;
+ try {response=await fetch(url,options);} catch(error) {document.getElementById('msg').textContent='Request failed: '+error.message;throw error;}
+ if(!response.ok){let body;try{body=await response.json()}catch{};const message=typeof body?.detail==='string'?body.detail:JSON.stringify(body?.detail||response.status);document.getElementById('msg').textContent='Request failed: '+message;throw new Error(message);}
+ return response;
+}
+window.addEventListener('unhandledrejection',e=>{document.getElementById('msg').textContent='Request failed: '+e.reason.message;e.preventDefault();});
+const pendingEvents=new Map();
+async function loadProducts(){const r=await checkedFetch(api+'/products');products=await r.json();document.getElementById('products').innerHTML=products.map(p=>`<div class="card"><h3>${p.name}</h3><p>${p.category}</p><p class="price">₹${p.price.toLocaleString('en-IN')}</p><button onclick="sendEvent('${p.id}','view')">View</button> <button onclick="sendEvent('${p.id}','click')">Click</button> <button onclick="sendEvent('${p.id}','purchase')">Purchase</button></div>`).join('');}
+async function sendEvent(pid,type){const user=document.getElementById('user').value.trim()||'student1';const key=JSON.stringify([user,pid,type]);const payload=pendingEvents.get(key)||{event_id:crypto.randomUUID(),user_id:user,product_id:pid,event_type:type,dwell_seconds:0};pendingEvents.set(key,payload);const r=await checkedFetch(api+'/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const x=await r.json();pendingEvents.delete(key);document.getElementById('msg').textContent=`${type} event recorded for ${user}. Broker published: ${x.published_to_broker}`;}
+async function getRecommendations(){const user=document.getElementById('user').value.trim()||'student1';const r=await checkedFetch(api+'/recommendations/'+encodeURIComponent(user));const x=await r.json();document.getElementById('recs').innerHTML=x.recommendations.map(p=>`<div class="card rec"><h3>${p.name}</h3><p>${p.category}</p><p>₹${p.price.toLocaleString('en-IN')}</p><small>Personalization score: ${p.score}</small></div>`).join('')||'<div class="msg">No recommendations yet. Interact with some products first.</div>';}
+async function loadEvents(){const user=document.getElementById('user').value.trim()||'student1';const r=await checkedFetch(api+'/events/'+encodeURIComponent(user));document.getElementById('events').textContent=JSON.stringify(await r.json(),null,2);}
+loadProducts();
+</script></body></html>

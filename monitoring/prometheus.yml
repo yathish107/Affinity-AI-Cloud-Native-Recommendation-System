@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 10s
+scrape_configs:
+- job_name: platform
+  static_configs:
+  - targets:
+    - recommender:8000
+    - recommendation:8000
+- job_name: workers
+  static_configs:
+  - targets:
+    - relay:9101
+    - consumer:9101

@@ -1,0 +1,9 @@
+# Migration and rollback
+Keep the original ZIP and old SQLite volume. Never run docker compose down -v.
+First backup SQLite using its backup API while stopping writers. Keep this backup separately. New PostgreSQL starts in postgres_data; the old recommendation_data volume is retained and not mounted or deleted.
+Run docker compose up --build. The migrate service must finish successfully before API/worker startup. PostgreSQL is required. These commands are provided but were not executed here.
+For an existing SQLite file, from backend run:
+python -m app.import_sqlite /absolute/path/backup.db --source-id stable-project-id
+Review the dry-run count, then repeat with --apply and the same source-id. Set DATABASE_URL to the target first. Import is per-row transactional and resumable by stable IDs. Ambiguous legacy duplicates are preserved. Importer preserves original timezone-aware created_at instants in UTC. Naive timestamps fail validation and must be resolved explicitly before import. All rows are validated before writes; retries compare supplied timestamps against the existing canonical row. Verify row counts and identities before cutover.
+Rollback: stop new writers/workers, take a PostgreSQL pg_dump backup, preserve new volumes, and start the original archived application with its original SQLite backup under a separate Compose project. New PostgreSQL events are not automatically copied back to SQLite. Reconcile them explicitly before accepting writes in the old system. Alembic destructive downgrade is intentionally disabled; restore backups into a separate database for rollback testing.
+Testing: use a dedicated empty disposable PostgreSQL database, run DATABASE_URL=... alembic upgrade head, then set TEST_DATABASE_URL and TEST_REDIS_URL and run pytest tests/test_phase2_integration.py. The lease test assumes no preexisting pending outbox records. Never point tests at user data.

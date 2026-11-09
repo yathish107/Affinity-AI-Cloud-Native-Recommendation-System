@@ -1,0 +1,208 @@
+services:
+  broker:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.9
+    command:
+    - redpanda
+    - start
+    - --overprovisioned
+    - --smp=1
+    - --memory=1G
+    - --reserve-memory=0M
+    - --node-id=0
+    - --check=false
+    - --kafka-addr=0.0.0.0:9092
+    - --advertise-kafka-addr=broker:9092
+    ports:
+    - 127.0.0.1:9092:9092
+    - 127.0.0.1:9644:9644
+    volumes:
+    - broker_data:/var/lib/redpanda/data
+    healthcheck:
+      test:
+      - CMD
+      - rpk
+      - cluster
+      - info
+      - -X
+      - brokers=broker:9092
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  recommender:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://recommend:recommend@postgres:5432/recommend
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP: broker:9092
+      APP_ROLE: api
+      ADMIN_KEY: ${ADMIN_KEY:?Set ADMIN_KEY in .env}
+      RECOMMENDATION_URL: http://recommendation:8000
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      recommendation:
+        condition: service_healthy
+    ports:
+    - 127.0.0.1:8000:8000
+    command: &id002
+    - uvicorn
+    - app.service:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    healthcheck: &id003
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')
+      interval: 10s
+      timeout: 3s
+      retries: 10
+  frontend:
+    build: ./frontend
+    depends_on:
+      recommender:
+        condition: service_healthy
+    ports:
+    - 127.0.0.1:8081:80
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: recommend
+      POSTGRES_PASSWORD: recommend
+      POSTGRES_DB: recommend
+    volumes:
+    - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U recommend -d recommend
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command:
+    - redis-server
+    - --maxmemory
+    - 64mb
+    - --maxmemory-policy
+    - allkeys-lru
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build: ./backend
+    environment: &id001
+      DATABASE_URL: postgresql+psycopg://recommend:recommend@postgres:5432/recommend
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP: broker:9092
+    command:
+    - alembic
+    - upgrade
+    - head
+    depends_on:
+      postgres:
+        condition: service_healthy
+  relay:
+    build: ./backend
+    environment: *id001
+    command:
+    - python
+    - -m
+    - app.worker
+    - relay
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      broker:
+        condition: service_started
+      topics:
+        condition: service_completed_successfully
+  consumer:
+    build: ./backend
+    environment: *id001
+    command:
+    - python
+    - -m
+    - app.worker
+    - consumer
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      broker:
+        condition: service_started
+      topics:
+        condition: service_completed_successfully
+  recommendation:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://recommend:recommend@postgres:5432/recommend
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP: broker:9092
+      APP_ROLE: recommendation
+      ADMIN_KEY: ${ADMIN_KEY:?Set ADMIN_KEY in .env}
+      RECOMMENDATION_URL: http://recommendation:8000
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: *id002
+    healthcheck: *id003
+  topics:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.9
+    entrypoint:
+    - sh
+    - -c
+    command:
+    - rpk topic create user-events -p 1 -r 1 -X brokers=broker:9092 || rpk topic describe
+      user-events -X brokers=broker:9092
+    depends_on:
+      broker:
+        condition: service_healthy
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    profiles:
+    - monitoring
+    volumes:
+    - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+    - 127.0.0.1:9090:9090
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.retention.time=2d
+  grafana:
+    image: grafana/grafana:11.6.0
+    profiles:
+    - monitoring
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Set GRAFANA_PASSWORD in .env}
+    volumes:
+    - ./monitoring/grafana:/etc/grafana/provisioning:ro
+    - ./monitoring/dashboard.json:/var/lib/grafana/dashboards/platform.json:ro
+    - grafana_data:/var/lib/grafana
+    ports:
+    - 127.0.0.1:3000:3000
+  otel:
+    image: otel/opentelemetry-collector:0.123.0
+    profiles:
+    - monitoring
+    command:
+    - --config=/etc/otel/config.yml
+    volumes:
+    - ./monitoring/otel.yml:/etc/otel/config.yml:ro
+volumes:
+  recommendation_data: null
+  postgres_data: null
+  broker_data: null
+  grafana_data: null

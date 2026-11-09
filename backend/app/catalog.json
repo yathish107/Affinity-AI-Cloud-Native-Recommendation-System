@@ -1,0 +1,86 @@
+[
+  {
+    "id": "p1",
+    "name": "Gaming Laptop",
+    "category": "electronics",
+    "price": 74999,
+    "tags": "gaming laptop computer gpu performance electronics"
+  },
+  {
+    "id": "p2",
+    "name": "Wireless Headphones",
+    "category": "electronics",
+    "price": 4999,
+    "tags": "audio headphones wireless music electronics"
+  },
+  {
+    "id": "p3",
+    "name": "Mechanical Keyboard",
+    "category": "electronics",
+    "price": 3499,
+    "tags": "gaming keyboard mechanical computer electronics"
+  },
+  {
+    "id": "p4",
+    "name": "Smartphone",
+    "category": "electronics",
+    "price": 29999,
+    "tags": "phone smartphone android electronics mobile"
+  },
+  {
+    "id": "p5",
+    "name": "Running Shoes",
+    "category": "fitness",
+    "price": 3999,
+    "tags": "running shoes fitness sports workout"
+  },
+  {
+    "id": "p6",
+    "name": "Gym Backpack",
+    "category": "fitness",
+    "price": 1899,
+    "tags": "gym backpack fitness sports travel"
+  },
+  {
+    "id": "p7",
+    "name": "Protein Shaker",
+    "category": "fitness",
+    "price": 799,
+    "tags": "protein shaker gym fitness workout"
+  },
+  {
+    "id": "p8",
+    "name": "Dumbbell Set",
+    "category": "fitness",
+    "price": 5999,
+    "tags": "dumbbell strength gym fitness workout"
+  },
+  {
+    "id": "p9",
+    "name": "Desk Lamp",
+    "category": "home",
+    "price": 1299,
+    "tags": "desk lamp office study home lighting"
+  },
+  {
+    "id": "p10",
+    "name": "Office Chair",
+    "category": "home",
+    "price": 8999,
+    "tags": "office chair desk work home furniture"
+  },
+  {
+    "id": "p11",
+    "name": "Coffee Maker",
+    "category": "home",
+    "price": 4999,
+    "tags": "coffee maker kitchen home beverage"
+  },
+  {
+    "id": "p12",
+    "name": "Travel Backpack",
+    "category": "travel",
+    "price": 2999,
+    "tags": "travel backpack luggage outdoor journey"
+  }
+]

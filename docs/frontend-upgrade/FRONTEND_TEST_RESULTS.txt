@@ -1,0 +1,47 @@
+✔ sendEvent: 400 cannot show success (4.993502ms)
+✔ loadProducts: 400 cannot show success (1.397184ms)
+✔ getRecommendations: 400 cannot show success (2.067452ms)
+✔ loadEvents: 400 cannot show success (1.073749ms)
+✔ sendEvent: 404 cannot show success (0.948849ms)
+✔ loadProducts: 404 cannot show success (2.273906ms)
+✔ getRecommendations: 404 cannot show success (3.562189ms)
+✔ loadEvents: 404 cannot show success (3.062217ms)
+✔ sendEvent: 500 cannot show success (10.661949ms)
+✔ loadProducts: 500 cannot show success (7.443522ms)
+✔ getRecommendations: 500 cannot show success (0.894515ms)
+✔ loadEvents: 500 cannot show success (1.518406ms)
+✔ sendEvent: network cannot show success (1.131505ms)
+✔ loadProducts: network cannot show success (3.911113ms)
+✔ getRecommendations: network cannot show success (0.599349ms)
+✔ loadEvents: network cannot show success (0.903331ms)
+✔ retry preserves ID after 400 (13.259891ms)
+✔ retry preserves ID after 404 (3.101962ms)
+✔ retry preserves ID after 500 (4.397477ms)
+✔ retry preserves ID after network (2.835232ms)
+✔ catalog recommendations and history render (42.641811ms)
+✔ every stable catalogue ID has a distinct embedded JPEG and shared recommendation photograph (74.902188ms)
+✔ photograph failure uses product-specific text without a broken image (6.573449ms)
+✔ missing score and explanation are not fabricated (1.66524ms)
+✔ server score, reasons and contributions render without HTML injection (2.071182ms)
+✔ event 400: no success, same ID on retry, new ID after success (49.31755ms)
+✔ event 404: no success, same ID on retry, new ID after success (21.733757ms)
+✔ event 500: no success, same ID on retry, new ID after success (3.04699ms)
+✔ event network: no success, same ID on retry, new ID after success (5.308853ms)
+✔ concurrent buttons cannot submit the same interaction twice (3.195561ms)
+✔ failed recommendation refresh does not retry an already accepted event (3.851444ms)
+✔ search and category intersection plus empty state (2.497073ms)
+✔ latest recommendation request wins and profile switch drops stale responses (1.752721ms)
+✔ history requests bounded pages and filters only current page (24.028953ms)
+✔ empty history and invalid timestamps render safely (6.23382ms)
+✔ health uses only explicit up/down and failed refresh clears stale success (2.300196ms)
+✔ analytics preserves admin header and charts use actual independent counts (9.141339ms)
+✔ analytics missing fields stay unavailable and rejected key clears old charts (4.351736ms)
+✔ navigation reveals one page and marks the active control (3.028752ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 475.798977

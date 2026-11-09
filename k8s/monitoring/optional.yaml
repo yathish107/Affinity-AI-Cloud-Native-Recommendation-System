@@ -1,0 +1,228 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: ai-recommender
+data:
+  config: "global:\n  scrape_interval: 10s\nscrape_configs:\n- job_name: platform\n\
+    \  static_configs:\n  - targets:\n    - recommender:8000\n    - recommendation:8000\n\
+    - job_name: workers\n  static_configs:\n  - targets:\n    - relay:9101\n    -\
+    \ consumer:9101\n"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v3.2.1
+        args:
+        - --config.file=/etc/prometheus/prometheus.yml
+        - --storage.tsdb.retention.time=2d
+        ports:
+        - containerPort: 9090
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: config
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: ai-recommender
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - port: 9090
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-config
+  namespace: ai-recommender
+data:
+  config: "exporters:\n  debug:\n    verbosity: basic\nreceivers:\n  otlp:\n    protocols:\n\
+    \      http:\n        endpoint: 0.0.0.0:4318\nservice:\n  pipelines:\n    traces:\n\
+    \      exporters:\n      - debug\n      receivers:\n      - otlp\n"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel
+  template:
+    metadata:
+      labels:
+        app: otel
+    spec:
+      containers:
+      - name: otel
+        image: otel/opentelemetry-collector:0.123.0
+        args:
+        - --config=/etc/otel/config.yml
+        ports:
+        - containerPort: 4318
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/otel/config.yml
+          subPath: config
+      volumes:
+      - name: config
+        configMap:
+          name: otel-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel
+  namespace: ai-recommender
+spec:
+  selector:
+    app: otel
+  ports:
+  - port: 4318
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource
+  namespace: ai-recommender
+data:
+  file: "apiVersion: 1\ndatasources:\n- access: proxy\n  isDefault: true\n  name:\
+    \ Prometheus\n  type: prometheus\n  uid: prometheus\n  url: http://prometheus:9090\n"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-provider
+  namespace: ai-recommender
+data:
+  file: "apiVersion: 1\nproviders:\n- name: platform\n  options:\n    path: /var/lib/grafana/dashboards\n\
+    \  type: file\n"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard
+  namespace: ai-recommender
+data:
+  file: '{"title": "Recommendation Platform", "uid": "recommendation-platform", "schemaVersion":
+    39, "panels": [{"id": 1, "title": "Request rate", "type": "timeseries", "datasource":
+    {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 0, "y": 0, "w":
+    12, "h": 8}, "targets": [{"expr": "sum by (role) (rate(platform_requests_total[5m]))",
+    "refId": "A"}]}, {"id": 2, "title": "p95 request latency", "type": "timeseries",
+    "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 12,
+    "y": 0, "w": 12, "h": 8}, "targets": [{"expr": "histogram_quantile(0.95, sum by
+    (le,role) (rate(platform_request_seconds_bucket[5m])))", "refId": "A"}]}, {"id":
+    10, "title": "worker_events_total", "type": "timeseries", "datasource": {"type":
+    "prometheus", "uid": "prometheus"}, "gridPos": {"x": 0, "y": 8, "w": 12, "h":
+    8}, "targets": [{"expr": "worker_events_total", "refId": "A"}]}, {"id": 11, "title":
+    "worker_failures_total", "type": "timeseries", "datasource": {"type": "prometheus",
+    "uid": "prometheus"}, "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}, "targets":
+    [{"expr": "worker_failures_total", "refId": "A"}]}, {"id": 12, "title": "worker_retries_total",
+    "type": "timeseries", "datasource": {"type": "prometheus", "uid": "prometheus"},
+    "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8}, "targets": [{"expr": "worker_retries_total",
+    "refId": "A"}]}, {"id": 13, "title": "worker_quarantined_total", "type": "timeseries",
+    "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 12,
+    "y": 16, "w": 12, "h": 8}, "targets": [{"expr": "worker_quarantined_total", "refId":
+    "A"}]}, {"id": 14, "title": "worker_processing_seconds_sum", "type": "timeseries",
+    "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 0,
+    "y": 24, "w": 12, "h": 8}, "targets": [{"expr": "worker_processing_seconds_sum",
+    "refId": "A"}]}, {"id": 15, "title": "worker_outbox_backlog", "type": "timeseries",
+    "datasource": {"type": "prometheus", "uid": "prometheus"}, "gridPos": {"x": 12,
+    "y": 24, "w": 12, "h": 8}, "targets": [{"expr": "worker_outbox_backlog", "refId":
+    "A"}]}]}'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: ai-recommender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:11.6.0
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: platform-secrets
+              key: GRAFANA_PASSWORD
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: grafana-datasource
+          mountPath: /etc/grafana/provisioning/datasources/default.yml
+          subPath: file
+        - name: grafana-provider
+          mountPath: /etc/grafana/provisioning/dashboards/default.yml
+          subPath: file
+        - name: grafana-dashboard
+          mountPath: /var/lib/grafana/dashboards/platform.json
+          subPath: file
+      volumes:
+      - name: grafana-datasource
+        configMap:
+          name: grafana-datasource
+      - name: grafana-provider
+        configMap:
+          name: grafana-provider
+      - name: grafana-dashboard
+        configMap:
+          name: grafana-dashboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: ai-recommender
+spec:
+  selector:
+    app: grafana
+  ports:
+  - port: 3000

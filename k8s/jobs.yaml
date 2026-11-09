@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  namespace: ai-recommender
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate
+        image: ai-recommender-backend:v2
+        command:
+        - alembic
+        - upgrade
+        - head
+        envFrom:
+        - secretRef:
+            name: platform-secrets
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: topics
+  namespace: ai-recommender
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: topics
+        image: docker.redpanda.com/redpandadata/redpanda:v24.3.9
+        command:
+        - sh
+        - -c
+        - rpk topic create user-events -p 1 -r 1 -X brokers=broker:9092 || rpk topic
+          describe user-events -X brokers=broker:9092

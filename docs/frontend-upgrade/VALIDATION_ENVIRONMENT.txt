@@ -1,0 +1,12 @@
+pytest==9.2.0
+fastapi==0.141.1
+starlette==1.6.0
+httpx==0.28.1
+numpy==2.3.5
+scikit-learn==1.8.0
+sqlalchemy==2.1.8
+redis==8.1.0
+kafka-python==3.0.12
+prometheus-client==0.26.0
+psycopg==3.3.8
+playwright==1.62.0
